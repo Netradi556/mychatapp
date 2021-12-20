@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(ChatApp());
@@ -53,7 +55,7 @@ class ChatPage extends StatelessWidget {
                 onPressed: () async {
                   //投稿画面に遷移
                   await Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (context) {
+                      .pushReplacement(MaterialPageRoute(builder: (context) {
                     return LoginPage();
                   }));
                 },
