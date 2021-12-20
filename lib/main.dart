@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
-  runApp(ChatApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -54,8 +54,40 @@ class _MyAuthPageState extends State<MyAuthPage> {
               const SizedBox(
                 height: 8,
               ),
-              TextFormField(),
-              ElevatedButton(onPressed: onPressed, child: child),
+              TextFormField(
+                decoration: InputDecoration(labelText: "パスワード"),
+                obscureText: true,
+                onChanged: (String value) {
+                  setState(() {
+                    newUserPassword = value;
+                  });
+                },
+              ),
+              const SizedBox(
+                height: 8,
+              ),
+              ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      // メールアドレス/パスワードでユーザー登録
+                      final FirebaseAuth auth = FirebaseAuth.instance;
+                      final UserCredential result =
+                          await auth.createUserWithEmailAndPassword(
+                              email: newUserEmail, password: newUserPassword);
+
+                      // 登録したユーザー情報
+                      final User user = result.user!;
+                      setState(() {
+                        infoText = "登録OK: ${user.email}";
+                      });
+                    } catch (e) {
+                      // 登録に失敗したユーザー
+                      setState(() {
+                        infoText = "登録NG: ${e.toString()}";
+                      });
+                    }
+                  },
+                  child: Text("ユーザー登録")),
               Text(infoText)
             ],
           ),
