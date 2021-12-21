@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 
 Future<void> main() async {
   //事前処理
@@ -144,7 +145,6 @@ class _LoginPageState extends State<LoginPage> {
 class ChatPage extends StatelessWidget {
   // コンストラクタを作成して、引数からユーザー情報を受け取れるようにする
   ChatPage(this.user);
-
   // ユーザー情報
   final User user;
 
@@ -152,18 +152,22 @@ class ChatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          title: Text('チャット'),
           actions: <Widget>[
             IconButton(
                 onPressed: () async {
-                  //投稿画面に遷移
+                  // ログアウト処理
+                  // 内部で保持しているログイン情報等が初期化される
+                  // （現時点ではログアウト時はこの処理を呼び出せばOKと、思うぐらいで大丈夫）
+                  await FirebaseAuth.instance.signOut();
+                  // ログイン画面に遷移＋チャット画面を破棄
                   await Navigator.of(context)
                       .pushReplacement(MaterialPageRoute(builder: (context) {
                     return LoginPage();
                   }));
                 },
-                icon: Icon(Icons.close))
+                icon: Icon(Icons.logout))
           ],
-          title: Text('チャット'),
         ),
         body: Center(
           // ユーザー情報を表示
@@ -175,15 +179,28 @@ class ChatPage extends StatelessWidget {
             // 投稿画面に遷移
             await Navigator.of(context)
                 .push(MaterialPageRoute(builder: (context) {
-              return AddPostPage();
+              return AddPostPage(user);
             }));
           },
         ));
   }
 }
 
+class AddPostPage extends StatefulWidget {
+  // 引数からユーザー情報を受け取る
+  AddPostPage(this.user);
+  // ユーザー情報
+  final User user;
+
+  @override
+  _AddPostPageState createState() => _AddPostPageState();
+}
+
 // 投稿画面用Widget
-class AddPostPage extends StatelessWidget {
+class _AddPostPageState extends State<AddPostPage> {
+  //入力した投稿メッセージ
+  String messageText = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,12 +208,49 @@ class AddPostPage extends StatelessWidget {
         title: Text('チャット投稿'),
       ),
       body: Center(
-        child: ElevatedButton(
-          child: Text('戻る'),
-          onPressed: () {
-            // １つ前の画面に戻る
-            Navigator.of(context).pop();
-          },
+        child: Container(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              // 投稿メッセージ入力
+              TextFormField(
+                decoration: InputDecoration(labelText: '投稿メッセージ'),
+                keyboardType: TextInputType.multiline,
+                maxLines: 3,
+                onChanged: (String value) {
+                  setState(() {
+                    messageText = value;
+                  });
+                },
+              ),
+              const SizedBox(
+                height: 8,
+              ),
+              Container(
+                width: double.infinity,
+                child: ElevatedButton(
+                  child: Text('投稿'),
+                  onPressed: () async {
+                    final date =
+                        DateTime.now().toLocal().toIso8601String(); // 現在の日時
+                    final email = widget.user.email; // AddPostPage のデータを参照
+                    // 投稿メッセージ用ドキュメント作成
+                    await FirebaseFirestore.instance
+                        .collection('posts') // コレクションID指定
+                        .doc() // ドキュメントID自動生成
+                        .set({
+                      'text': messageText,
+                      'email': email,
+                      'date': date
+                    });
+                    // ひとつ前の画面に戻る
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
