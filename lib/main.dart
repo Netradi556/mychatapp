@@ -102,8 +102,26 @@ class _MyFirestorePageState extends State<MyFirestorePage> {
                 }),
             // ドキュメントの情報を表示
             ListTile(title: Text(orderDocumentInfo)),
-            // ElevatedButton(onPressed: onPressed, child: child),
-            // ElevatedButton(onPressed: onPressed, child: child)
+            ElevatedButton(
+                onPressed: () async {
+                  // ドキュメント更新
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc('id_abc')
+                      .update({'age': 41});
+                },
+                child: Text('ドキュメント更新')),
+            ElevatedButton(
+                onPressed: () async {
+                  // ドキュメント削除
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc('id_abc')
+                      .collection('orders')
+                      .doc('id_123')
+                      .delete();
+                },
+                child: Text('ドキュメント削除'))
           ],
         ),
       ),
