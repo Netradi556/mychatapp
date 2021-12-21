@@ -114,9 +114,8 @@ class _LoginPageState extends State<LoginPage> {
                       try {
                         // メール・パスワードでログイン
                         final FirebaseAuth auth = FirebaseAuth.instance;
-                        final result =
-                            await auth.createUserWithEmailAndPassword(
-                                email: email, password: password);
+                        final result = await auth.signInWithEmailAndPassword(
+                            email: email, password: password);
                         await auth.signInWithEmailAndPassword(
                             email: email, password: password);
                         // ログインに成功した場合
