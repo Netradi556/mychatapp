@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   //事前処理
@@ -14,19 +15,34 @@ Future<void> main() async {
   runApp(ChatApp());
 }
 
+// 更新可能なデータ
+class UserState extends ChangeNotifier {
+  User? user;
+
+  void setUser(User newUser) {
+    user = newUser;
+    notifyListeners();
+  }
+}
+
 class ChatApp extends StatelessWidget {
+  // ユーザーの情報を管理するデータ
+  final UserState userState = UserState();
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      //アプリ名
-      title: 'ChatApp',
-      theme: ThemeData(
-        //テーマカラー
-        primarySwatch: Colors.blue,
-      ),
-      //ログイン画面を表示
-      home: LoginPage(),
-    );
+    return ChangeNotifierProvier<UserState>(
+        create: (context) => UserState(),
+        child: MaterialApp(
+          //アプリ名
+          title: 'ChatApp',
+          theme: ThemeData(
+            //テーマカラー
+            primarySwatch: Colors.blue,
+          ),
+          //ログイン画面を表示
+          home: LoginPage(),
+        ));
   }
 }
 
@@ -301,6 +317,56 @@ class _AddPostPageState extends State<AddPostPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ChangeNotifierを継承すると変更可能なデータを渡せる
+class CountData extends ChangeNotifier {
+  int count = 0;
+
+  void increment() {
+    count = count + 1;
+    // 値が変更したことを知らせる
+    //  >> UIを再構築する
+    notifyListeners();
+  }
+}
+
+class ParentWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Provider<T>() で子Widgetにデータを渡す
+    // ※ 渡すデータの クラス と <T> は揃える
+
+    return ChangeNotifierProvider<CountData>(
+      // 渡すデータ
+      create: (context) => CountData(),
+      child: Container(
+        child: ChildWidget(),
+      ),
+    );
+  }
+}
+
+class ChildWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Provider.of<T>(context) で親Widgetからデータを受け取る
+    // ※ 受け取るデータの クラス と <T> は揃える
+    final CountData data = Provider.of<CountData>(context);
+
+    return Column(
+      children: <Widget>[
+        // 受け取ったデータを使いUI作成
+        Text('count is ${data.count.toString()}'),
+        ElevatedButton(
+            onPressed: () {
+              // データ更新
+              data.increment();
+            },
+            child: Text('Increment'))
+      ],
     );
   }
 }
