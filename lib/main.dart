@@ -100,6 +100,34 @@ class _LoginPageState extends State<LoginPage> {
                     },
                     child: Text('ユーザー登録')),
               ),
+              const SizedBox(
+                height: 8,
+              ),
+              Container(
+                width: double.infinity,
+                // ログイン登録ボタン
+                child: OutlinedButton(
+                    onPressed: () async {
+                      try {
+                        // メール・パスワードでログイン
+                        final FirebaseAuth auth = FirebaseAuth.instance;
+                        await auth.signInWithEmailAndPassword(
+                            email: email, password: password);
+                        // ログインに成功した場合
+                        // チャット画面に遷移＋ログイン画面を破棄
+                        await Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (context) {
+                          return ChatPage();
+                        }));
+                      } catch (e) {
+                        // ログインに失敗した場合
+                        setState(() {
+                          infoText = "ログインに失敗しました${e.toString()}";
+                        });
+                      }
+                    },
+                    child: Text('ログイン')),
+              ),
             ],
           ),
         ),
