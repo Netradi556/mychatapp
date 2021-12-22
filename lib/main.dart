@@ -46,11 +46,12 @@ final postsQueryProvider = StreamProvider.autoDispose((ref) {
       .snapshots();
 });
 
-Future<void> main() async {
+main() async {
   //事前処理
   WidgetsFlutterBinding.ensureInitialized();
   // Firebase初期化
   await Firebase.initializeApp();
+
   runApp(
       // Riverpodでデータを受け渡しできる状態にする
       ProviderScope(
@@ -70,9 +71,6 @@ class UserState extends ChangeNotifier {
 }
 
 class ChatApp extends StatelessWidget {
-  // ユーザーの情報を管理するデータ
-  final UserState userState = UserState();
-
   // Providerは最初に呼び出すWidgetのbuild以下をラップしていた
   @override
   Widget build(BuildContext context) {
