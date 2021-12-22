@@ -1,10 +1,12 @@
 import 'dart:html';
+import 'dart:js';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   //事前処理
@@ -14,22 +16,38 @@ Future<void> main() async {
   runApp(ChatApp());
 }
 
-class ChatApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      //アプリ名
-      title: 'ChatApp',
-      theme: ThemeData(
-        //テーマカラー
-        primarySwatch: Colors.blue,
-      ),
-      //ログイン画面を表示
-      home: LoginPage(),
-    );
+// 更新可能なデータ
+class UserState extends ChangeNotifier {
+  User? user;
+
+  void setUser(User newUser) {
+    user = newUser;
+    notifyListeners();
   }
 }
 
+class ChatApp extends StatelessWidget {
+  // ユーザーの情報を管理するデータ
+  final UserState userState = UserState();
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<UserState>(
+        create: (context) => UserState(),
+        child: MaterialApp(
+          //アプリ名
+          title: 'ChatApp',
+          theme: ThemeData(
+            //テーマカラー
+            primarySwatch: Colors.blue,
+          ),
+          //ログイン画面を表示
+          home: LoginPage(),
+        ));
+  }
+}
+
+// ログイン画面用Widget
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -45,6 +63,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ユーザー情報を受け取る
+    final UserState userState = Provider.of<UserState>(context);
+
     return Scaffold(
       body: Center(
         child: Container(
@@ -87,13 +108,13 @@ class _LoginPageState extends State<LoginPage> {
                         final result =
                             await auth.createUserWithEmailAndPassword(
                                 email: email, password: password);
-                        await auth.createUserWithEmailAndPassword(
-                            email: email, password: password);
+                        // ユーザー情報を更新
+                        userState.setUser(result.user!);
                         // ユーザー登録に成功した場合
                         // チャット画面に繊維＋ログイン画面を破棄
                         await Navigator.of(context).pushReplacement(
                             MaterialPageRoute(builder: (context) {
-                          return ChatPage(result.user!);
+                          return ChatPage(); // Providerの導入によって引数に状態を渡さない
                         }));
                       } catch (e) {
                         // ユーザー登録に失敗した場合
@@ -117,13 +138,13 @@ class _LoginPageState extends State<LoginPage> {
                         final FirebaseAuth auth = FirebaseAuth.instance;
                         final result = await auth.signInWithEmailAndPassword(
                             email: email, password: password);
-                        await auth.signInWithEmailAndPassword(
-                            email: email, password: password);
+                        // ユーザー情報を更新
+                        userState.setUser(result.user!);
                         // ログインに成功した場合
                         // チャット画面に遷移＋ログイン画面を破棄
                         await Navigator.of(context).pushReplacement(
                             MaterialPageRoute(builder: (context) {
-                          return ChatPage(result.user!);
+                          return ChatPage(); // Providerの導入によって引数に状態を渡さない
                         }));
                       } catch (e) {
                         // ログインに失敗した場合
@@ -142,14 +163,21 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+// チャット画面用Widget
 class ChatPage extends StatelessWidget {
   // コンストラクタを作成して、引数からユーザー情報を受け取れるようにする
-  ChatPage(this.user);
+  // ChatPage(this.user);
+  // →Providerの導入によって、コンストラクタ＋引数で状態を受け取らなくて良くなった
+
   // ユーザー情報
-  final User user;
+  // final User user; Providerなしのパターンの記述
 
   @override
   Widget build(BuildContext context) {
+    // ユーザー情報をbuildメソッド内で受け取る
+    final UserState userState = Provider.of<UserState>(context);
+    final User user = userState.user!;
+
     return Scaffold(
         appBar: AppBar(
           title: Text('チャット'),
@@ -227,7 +255,7 @@ class ChatPage extends StatelessWidget {
             // 投稿画面に遷移
             await Navigator.of(context)
                 .push(MaterialPageRoute(builder: (context) {
-              return AddPostPage(user);
+              return AddPostPage(); // Providerの導入に伴って、引数に状態を渡す必要がなくなった
             }));
           },
         ));
@@ -235,10 +263,11 @@ class ChatPage extends StatelessWidget {
 }
 
 class AddPostPage extends StatefulWidget {
+  // ↓Providerの導入に伴ってコンストラクタ＋引数で状態を受け取らなくて良い
   // 引数からユーザー情報を受け取る
-  AddPostPage(this.user);
+  // AddPostPage(this.user);
   // ユーザー情報
-  final User user;
+  // final User user;
 
   @override
   _AddPostPageState createState() => _AddPostPageState();
@@ -251,6 +280,12 @@ class _AddPostPageState extends State<AddPostPage> {
 
   @override
   Widget build(BuildContext context) {
+    // class AddPostPage extends StatefulWidgetの代わりに
+    // build()内でユーザー情報を受け取る
+
+    final UserState userState = Provider.of<UserState>(context);
+    final User user = userState.user!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('チャット投稿'),
@@ -282,7 +317,9 @@ class _AddPostPageState extends State<AddPostPage> {
                   onPressed: () async {
                     final date =
                         DateTime.now().toLocal().toIso8601String(); // 現在の日時
-                    final email = widget.user.email; // AddPostPage のデータを参照
+
+                    // Provider導入前は = widget.user.email
+                    final email = user.email; // AddPostPage のデータを参照
                     // 投稿メッセージ用ドキュメント作成
                     await FirebaseFirestore.instance
                         .collection('posts') // コレクションID指定
@@ -301,6 +338,56 @@ class _AddPostPageState extends State<AddPostPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ChangeNotifierを継承すると変更可能なデータを渡せる
+class CountData extends ChangeNotifier {
+  int count = 0;
+
+  void increment() {
+    count = count + 1;
+    // 値が変更したことを知らせる
+    //  >> UIを再構築する
+    notifyListeners();
+  }
+}
+
+class ParentWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Provider<T>() で子Widgetにデータを渡す
+    // ※ 渡すデータの クラス と <T> は揃える
+
+    return ChangeNotifierProvider<CountData>(
+      // 渡すデータ
+      create: (context) => CountData(),
+      child: Container(
+        child: ChildWidget(),
+      ),
+    );
+  }
+}
+
+class ChildWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Provider.of<T>(context) で親Widgetからデータを受け取る
+    // ※ 受け取るデータの クラス と <T> は揃える
+    final CountData data = Provider.of<CountData>(context);
+
+    return Column(
+      children: <Widget>[
+        // 受け取ったデータを使いUI作成
+        Text('count is ${data.count.toString()}'),
+        ElevatedButton(
+            onPressed: () {
+              // データ更新
+              data.increment();
+            },
+            child: Text('Increment'))
+      ],
     );
   }
 }
