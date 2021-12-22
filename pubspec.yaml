@@ -32,7 +32,7 @@ dependencies:
   firebase_core: ^1.0.1
   firebase_auth: ^1.0.1
   cloud_firestore: ^1.0.1
-
+  provider: ^5.0.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -43,7 +43,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  provider: ^3.1.0+1
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
